@@ -14,9 +14,10 @@ module Position =
 
 
 type position = Position.t
-type cellContent = Number of int | NoNumber
+type cellNumber = int
+type cellContent = Number of cellNumber | NoNumber
 type status = Win | Lose | Playing
-type move = (position * cellContent)
+type move = (position * cellNumber)
 module PositionMap = Map.Make(Position)
 type gameState = cellContent PositionMap.t
 type zone = position list
@@ -56,8 +57,35 @@ let rec isUniq lst =
           | hhd :: ttl -> if hd = hhd then false
                             else isUniq tl ;;
 
-let allZones = (* TODO *)
-    [] ;;
+(* if ll = [a;b] and lr = [c;d], returns [[(a,c);(a,d)]; [(b,c);(b,d)]] *)
+let left_cross ll lr =
+    let aux el =
+        List.map (function x -> (el, x)) lr in
+    List.map aux ll
+;;
+
+let right_cross ll lr =
+    let aux er =
+        List.map (function x -> (x, er)) ll in
+    List.map aux lr
+;;
+
+let cross_product ll rr =
+    List.flatten (left_cross ll rr)
+;;
+
+let allZones =
+    let allIndices = range 1 9 in
+    let lines = left_cross allIndices allIndices in
+    let columns = right_cross allIndices allIndices in
+    let z = [range 1 3; range 4 6; range 7 9] in
+    let rangePairs = cross_product z z in
+    let aux rangePair =
+        match rangePair with
+        (range1,range2) -> cross_product range1 range2 in
+    let squares = List.map aux rangePairs in
+    List.concat [lines; columns; squares]
+;;
 
 (* Returns the cell content of a given position *)
 let getCellContent gameState pos =
@@ -106,7 +134,9 @@ let uniq comparator l =
                                 else hd :: aux tl in
     let sList = List.sort comparator l in
     aux sList
-    ;;
+;;
+
+exception NoNumberException ;;
 
 (* Returns the legal moves for a given position *)
 let legalMovesPos gameState pos =
@@ -114,7 +144,12 @@ let legalMovesPos gameState pos =
     let concurrentPos = uniq Position.compare (List.flatten myZones) in
     let concurrentContents = List.map (getCellContent gameState) concurrentPos in
     let concurrentNumbers = uniq Pervasives.compare (List.filter isNumber concurrentContents) in
-    List.filter (function n -> not (List.mem n concurrentNumbers)) allNumbers
+    let filterAux = function n -> not (List.mem n concurrentNumbers) in
+    let resultContents = List.filter filterAux allNumbers in
+    let mappingAux = function content -> match content with
+        | NoNumber -> raise NoNumberException
+        | Number(x) -> x in
+    List.map mappingAux resultContents
 ;;
 
 (* Picks one unfilled position, and returns all the possible moves for that
@@ -143,11 +178,18 @@ let legalMoves gameState =
 
 let initialState = PositionMap.empty ;;
 
-let print_position p =
+let printPosition p =
     match p with
     (u,v)-> print_string "[";
             print_int u;
             print_string ", ";
             print_int v;
-            print_string "]" ;;
+            print_string "]"
+;;
 
+exception EmptyContentInMove ;;
+
+let nextState gameState move =
+    match move with
+    | (pos, number) -> PositionMap.add pos (Number(number)) gameState
+;;

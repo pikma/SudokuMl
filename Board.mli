@@ -1,6 +1,7 @@
 type gameState
 type move
+type status = Win | Lose | Playing
 val initialState : gameState
 val legalMoves : gameState -> move list
-type status = Win | Lose | Playing
 val getStatus : gameState -> status
+val nextState : gameState -> move -> gameState

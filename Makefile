@@ -4,7 +4,7 @@ FILENAME=main
 
 all: $(FILENAME)
 
-$(FILENAME): Board.cmo
+$(FILENAME): Board.cmo Backtracking.cmo
 	$(CC) -o $@ $^
 
 %.cmo: %.ml %.cmi
